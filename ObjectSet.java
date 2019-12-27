@@ -1,6 +1,51 @@
-class Node {
-	Object value;
+/*@
+fixpoint boolean contains<t>(list<t> xs, t value) {
+	switch (xs) {
+	case nil: return false;
+	case cons(x, xs0): return (x == value ? true : contains(xs0, value));
+	}
+}
+
+fixpoint list<t> remove<t>(list<t> xs, t value) {
+	switch (xs) {
+	case nil: return false;
+	case cons(x, xs0): return (x == value ? true : contains(xs0, value));
+	}
+}
+@*/
+
+interface Set {
+	//@predicate set(list<Object> elems);
+	
+	boolean isEmpty();
+		//@ requires set(?elems);
+		//@ ensures set(elems) &*& result == (length(elems) == 0);
+
+	int size();
+		//@ requires set(?elems);
+		//@ ensures set(elems) &*& result == length(elems);
+	
+	void clear();
+		//@ requires set(?elems);
+		//@ ensures set(elems) &*& length(elems) == 0;
+	
+	boolean contains(Object e);
+		//@ requires set(?elems);
+		//@ ensures set(elems);
+	
+	void add(Object e);
+		//@ requires set(?elems) &*& contains(elems,e) == false;
+		//@ ensures set(elems) &*& contains(elems,e) == true &*& set(cons(e, elems));
+	
+	void remove(Object e);
+		//@ requires set(?elems) &*& contains(elems,e) == true;
+		//@ ensures set(elems) &*& contains(elems,e) == false &*& set(cons(e, elems));
+}
+
+class Node {	
+	final Object value;
 	Node next;
+	
 	Node (Object value, Node next)
 	//@ requires true;
 	//@ ensures this.value |-> value &*& this.next |-> next;
@@ -10,7 +55,7 @@ class Node {
 	}
 }
 
-public class ObjectSet {
+class ObjectSet {//implements Set{
 
 	private Node head;
 	private int size;
@@ -103,7 +148,7 @@ public class ObjectSet {
 	}
 
 
-	public static void main(String[] args)
+	/*public static void main(String[] args)
 	//@ requires System_out(?o) &*& o != null;
 	//@ ensures true;
 	{
@@ -128,7 +173,7 @@ public class ObjectSet {
 		System.out.println("size " + set.size());
 		System.out.println(set.contains(a));
 		System.out.println(set.contains(b));
-	}
+	}*/
 
 
 
