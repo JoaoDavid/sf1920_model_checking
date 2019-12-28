@@ -1,15 +1,15 @@
 /*@
-fixpoint boolean contains<t>(list<t> xs, t value) {
+fixpoint boolean containsInList<t>(list<t> xs, t value) {
 	switch (xs) {
 	case nil: return false;
-	case cons(x, xs0): return (x == value ? true : contains(xs0, value));
+	case cons(x, xs0): return (x == value ? true : containsInList(xs0, value));
 	}
 }
 
-fixpoint list<t> remove<t>(list<t> xs, t value) {
+fixpoint list<t> removeFromList<t>(list<t> xs, t value) {
 	switch (xs) {
-	case nil: return false;
-	case cons(x, xs0): return (x == value ? true : contains(xs0, value));
+	case nil: return xs;
+	case cons(x, xs0): return (x == value ? xs : removeFromList(xs0, value));
 	}
 }
 @*/
@@ -34,12 +34,12 @@ interface Set {
 		//@ ensures set(elems);
 	
 	void add(Object e);
-		//@ requires set(?elems) &*& contains(elems,e) == false;
-		//@ ensures set(elems) &*& contains(elems,e) == true &*& set(cons(e, elems));
+		//@ requires set(?elems) &*& containsInList(elems,e) == false;
+		//@ ensures set(elems) &*& containsInList(elems,e) == true &*& set(cons(e, elems));
 	
 	void remove(Object e);
-		//@ requires set(?elems) &*& contains(elems,e) == true;
-		//@ ensures set(elems) &*& contains(elems,e) == false &*& set(cons(e, elems));
+		//@ requires set(?elems) &*& containsInList(elems,e) == true;
+		//@ ensures set(elems) &*& containsInList(elems,e) == false &*& set(cons(e, elems));
 }
 
 class Node {	
@@ -55,37 +55,69 @@ class Node {
 	}
 }
 
+/*@
+predicate listOf(Node node; list<Object> elems) =
+  node == null ?
+    elems == nil
+  :
+    node.value |-> ?v &*&
+    node.next |-> ?n &*&
+    listOf(n, ?nelems) &*&
+    elems == cons(v, nelems);
+@*/
+
 class ObjectSet {//implements Set{
+	/*@
+	predicate set(list<Object> elems) =
+	head |-> ?h &*& listOf(h, elems) &*&
+	size |-> length(elems);
+	@*/
 
 	private Node head;
 	private int size;
 
-	private ObjectSet() {
+	private ObjectSet()
+	//@ requires true;
+    	//@ ensures set(nil);
+	{
 		head = null;
 		size = 0;
 	}
 
-	public boolean isEmpty() {
+	public boolean isEmpty()
+	//@ requires set(?elems);
+   	//@ ensures set(elems) &*& result == (length(elems) == 0);
+	{	
 		return size == 0;
 	}
 
 	public int size()
+	//@ requires set(?elems);
+   	//@ ensures set(elems) &*& result == length(elems);
 	{
 		return size;
 	}
 
 	public void clear()
+	//@ requires set(?elems);
+	//@ ensures set(nil);
 	{
 		head = null;
 		size = 0;
 	}
 
 	public boolean contains(Object e)
+	//@ requires set(?elems);
+	//@ ensures set(elems);
 	{
+		//@open set(elems);
 		return contains(e, head);
+		//@close set(elems);
 	}
 
 	private static boolean contains (Object e, Node current)
+	//@ requires current.value |-> ?v &*& current.next |-> ?n;
+	//@ ensures current.value |-> v &*& current.next |-> n;
 	{
 		if (current == null) {
 			return false;
