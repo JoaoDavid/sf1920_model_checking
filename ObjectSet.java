@@ -83,7 +83,7 @@ class ObjectSet {//implements Set{
 	/*@
 	predicate set(list<Object> elems) =
 	head |-> ?h &*& listOf(h, elems) &*&
-	size |-> length(elems) &*& lseg(h, null, length(elems));
+	size |-> length(elems);
 	@*/
 
 	private Node head;
@@ -145,30 +145,28 @@ class ObjectSet {//implements Set{
 
 	public void add(Object e)
 	//@ requires set(?elems);
-	//@ ensures set(elems);
+	//@ ensures set(cons(e, elems));
 	{
 		//open set(elems);
 		//if(this.isEmpty()) {
-		if(size == 0) {
-			head = new Node(e, null);
+		//if(size == 0) {
+			head = new Node(e, head);
 			size++;
-		} else {
-			addAux(e,head);
-		}		
+		//} else {
+		//	addAux(e,head);
+		//}	
 	}
 
 	private void addAux (Object e, Node current)
 	{
-		if(current.value == e) {
-			return;
-		} else {
+		//if(current.value != e) {			
 			if (current.next == null) {
 				current.next = new Node(e, null);
 				size++;
 			} else {
 				addAux(e, current.next);
 			}
-		}
+		//}
 	}
 
 	public void remove(Object e)
