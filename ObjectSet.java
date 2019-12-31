@@ -64,13 +64,26 @@ predicate listOf(Node node; list<Object> elems) =
     node.next |-> ?n &*&
     listOf(n, ?nelems) &*&
     elems == cons(v, nelems);
+    
+predicate nodes(Node n0; int count) =
+    n0 == null ?
+        count == 0
+    :
+        n0.value |-> _ &*& n0.next |-> ?next &*&
+        nodes(next, ?ncount) &*&
+        count == 1 + ncount;    
+
+predicate lseg(Node first, Node last; int size) =
+	first == last ? size == 0 
+		: first.value |-> _ &*& first.next |-> ?next &*&
+		lseg(next, last, ?nsize) &*& size == nsize + 1;
 @*/
 
 class ObjectSet {//implements Set{
 	/*@
 	predicate set(list<Object> elems) =
 	head |-> ?h &*& listOf(h, elems) &*&
-	size |-> length(elems);
+	size |-> length(elems) &*& lseg(h, null, length(elems));
 	@*/
 
 	private Node head;
@@ -115,9 +128,9 @@ class ObjectSet {//implements Set{
 		//@close set(elems);
 	}
 
-	private static boolean contains (Object e, Node current)
-	//@ requires current.value |-> ?v &*& current.next |-> ?n;
-	//@ ensures current.value |-> v &*& current.next |-> n;
+	private boolean contains (Object e, Node current)
+	//@ requires listOf(current, ?elems);
+	//@ ensures listOf(current, elems);
 	{
 		if (current == null) {
 			return false;
@@ -127,13 +140,16 @@ class ObjectSet {//implements Set{
 			} else {
 				return contains(e, current.next);
 			}
-		}		
-		//return current != null && current.value == e ? true : get (index - 1, current.next);
+		}
 	}
 
 	public void add(Object e)
+	//@ requires set(?elems);
+	//@ ensures set(elems);
 	{
-		if(isEmpty()) {
+		//open set(elems);
+		//if(this.isEmpty()) {
+		if(size == 0) {
 			head = new Node(e, null);
 			size++;
 		} else {
