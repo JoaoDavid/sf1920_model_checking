@@ -1,61 +1,4 @@
 /*@
-fixpoint boolean containsInList<t>(list<t> xs, t value) {
-	switch (xs) {
-	case nil: return false;
-	case cons(x, xs0): return (x == value ? true : containsInList(xs0, value));
-	}
-}
-
-fixpoint list<t> removeFromList<t>(list<t> xs, t value) {
-	switch (xs) {
-	case nil: return xs;
-	case cons(x, xs0): return (x == value ? xs : removeFromList(xs0, value));
-	}
-}
-@*/
-
-interface Set {
-	//@predicate set(list<Object> elems);
-	
-	boolean isEmpty();
-		//@ requires set(?elems);
-		//@ ensures set(elems) &*& result == (length(elems) == 0);
-
-	int size();
-		//@ requires set(?elems);
-		//@ ensures set(elems) &*& result == length(elems);
-	
-	void clear();
-		//@ requires set(?elems);
-		//@ ensures set(elems) &*& length(elems) == 0;
-	
-	boolean contains(Object e);
-		//@ requires set(?elems);
-		//@ ensures set(elems);
-	
-	void add(Object e);
-		//@ requires set(?elems) &*& containsInList(elems,e) == false;
-		//@ ensures set(elems) &*& containsInList(elems,e) == true &*& set(cons(e, elems));
-	
-	void remove(Object e);
-		//@ requires set(?elems) &*& containsInList(elems,e) == true;
-		//@ ensures set(elems) &*& containsInList(elems,e) == false &*& set(cons(e, elems));
-}
-
-class Node {	
-	final Object value;
-	Node next;
-	
-	Node (Object value, Node next)
-	//@ requires true;
-	//@ ensures this.value |-> value &*& this.next |-> next;
-	{
-		this.value = value;
-		this.next = next;
-	}
-}
-
-/*@
 predicate listOf(Node node; list<Object> elems) =
   node == null ?
     elems == nil
@@ -77,7 +20,34 @@ predicate lseg(Node first, Node last; int size) =
 	first == last ? size == 0 
 		: first.value |-> _ &*& first.next |-> ?next &*&
 		lseg(next, last, ?nsize) &*& size == nsize + 1;
+		
+fixpoint boolean containsInList<t>(list<t> xs, t value) {
+	switch (xs) {
+	case nil: return false;
+	case cons(x, xs0): return (x == value ? true : containsInList(xs0, value));
+	}
+}
+
+fixpoint list<t> removeFromList<t>(list<t> xs, t value) {
+	switch (xs) {
+	case nil: return xs;
+	case cons(x, xs0): return (x == value ? xs : removeFromList(xs0, value));
+	}
+}
 @*/
+
+class Node {	
+	final Object value;
+	Node next;
+	
+	Node (Object value, Node next)
+	//@ requires true;
+	//@ ensures this.value |-> value &*& this.next |-> next;
+	{
+		this.value = value;
+		this.next = next;
+	}
+}
 
 class ObjectSet {//implements Set{
 	/*@
@@ -121,30 +91,36 @@ class ObjectSet {//implements Set{
 
 	public boolean contains(Object e)
 	//@ requires set(?elems);
-	//@ ensures set(elems);
+	//@ ensures set(elems) &*& containsInList(elems, e) == result;
 	{
 		//@open set(elems);
 		return contains(e, head);
 		//@close set(elems);
 	}
-
+/*	
+	fixpoint boolean containsInList<t>(list<t> xs, t value) {
+	switch (xs) {
+	case nil: return false;
+	case cons(x, xs0): return (x == value ? true : containsInList(xs0, value));
+	}
+}*/
 	private boolean contains (Object e, Node current)
 	//@ requires listOf(current, ?elems);
-	//@ ensures listOf(current, elems);
+	//@ ensures listOf(current, elems) &*& containsInList(elems, e) == result;
 	{
 		if (current == null) {
+			//@open listOf(current, elems);
 			return false;
+			//@close listOf(current, nil);
 		} else {
-			if (current.value == e) {
-				return true;
-			} else {
-				return contains(e, current.next);
-			}
+			//@open listOf(current, elems);
+			return (current.value == e ? true : contains(e, current.next));
+			//@close listOf(current, elems);
 		}
 	}
 
 	public void add(Object e)
-	//@ requires set(?elems);
+	//@ requires set(?elems) &*& containsInList(elems, e) == false;
 	//@ ensures set(cons(e, elems));
 	{
 		//open set(elems);
