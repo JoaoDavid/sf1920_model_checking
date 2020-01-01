@@ -6,7 +6,8 @@ predicate listOf(Node node; list<Object> elems) =
     node.value |-> ?v &*&
     node.next |-> ?n &*&
     listOf(n, ?nelems) &*&
-    elems == cons(v, nelems);
+    elems == cons(v, nelems) &*&
+    false == containsInList(nelems,v);
     
 predicate nodes(Node n0; int count) =
     n0 == null ?
@@ -149,41 +150,46 @@ class ObjectSet {//implements Set{
 
 	public void remove(Object e)
 	//@ requires set(?elems) &*& containsInList(elems, e) == true;
-	//@ ensures set(removeFromList(elems,e)) &*& containsInList(removeFromList(elems, e), e) == false;
+	// ensures set(removeFromList(elems,e));
+	//@ ensures set(tail(elems));
+	// ensures set(removeFromList(elems,e)) &*& containsInList(removeFromList(elems, e), e) == false;
 	{
 		//@open set(elems);
 		//@open listOf(head, elems);
-		if(this.head.value == e) {			
+		//if(this.head.value == e) {
 			head = head.next;
 			size--;
-			//close listOf(head, elems);
-			//open listOf(head, removeFromList(elems,e));
-		} else {
+			//close listOf(head, tail(elems));
+			//close set(removeFromList(elems,e));
+			//@close set(tail(elems));
+		//} //else {
 			//removeAux(e,head,head.next);
-			//@close listOf(head, removeFromList(elems, e));
-			//@close set(removeFromList(elems, e));
-		}
+			//close listOf(head, removeFromList(elems, e));
+			//close set(removeFromList(elems, e));
+		//}
+		//@close set(tail(elems));
+		//@close set(tail(elems));
 		
 	}
 	
-	private void remove (Object e, Node current)
-	//@ requires listOf(current, ?elems);
-	//@ ensures listOf(current, elems) &*& containsInList(elems, e) == false;
+	private Node remove (Object e, Node current)
+	// requires listOf(current, ?elems);
+	// ensures listOf(current, elems) &*& containsInList(elems, e) == false;
 	{
 		if (current == null) {
 			//@open listOf(current, elems);
-			return false;
+			return current;
 			//@close listOf(current, nil);
 		} else {
 			//@open listOf(current, elems);
-			return (current.value == e ? true : contains(e, current.next));
+			return (current.value == e ? current.next : remove(e, current.next));
 			//@close listOf(current, elems);
 		}
 	}
 
 	private void removeAux(Object e, Node previous, Node current)
-	//@ requires listOf(previous, ?elems);
-	//@ ensures listOf(previous, elems) &*& containsInList(elems, e) == false;
+	// requires listOf(previous, ?elems);
+	// ensures listOf(previous, elems) &*& containsInList(elems, e) == false;
 	{
 		if (current == null) {
 			return;
