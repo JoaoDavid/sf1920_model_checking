@@ -32,7 +32,7 @@ fixpoint boolean containsInList<t>(list<t> xs, t value) {
 fixpoint list<t> removeFromList<t>(list<t> xs, t value) {
 	switch (xs) {
 	case nil: return nil;
-	case cons(x, xs0): return (x == value ? xs : cons(x,removeFromList(xs0, value)));
+	case cons(x, xs0): return (x == value ? xs0 : cons(x,removeFromList(xs0, value)));
 	}
 }
 @*/
@@ -150,50 +150,45 @@ class ObjectSet {//implements Set{
 
 	public void remove(Object e)
 	//@ requires set(?elems) &*& containsInList(elems, e) == true;
-	// ensures set(removeFromList(elems,e));
-	//@ ensures set(tail(elems));
+	//@ ensures set(removeFromList(elems,e));
+	// ensures set(tail(elems)) &*& containsInList(elems, e) == false;;
 	// ensures set(removeFromList(elems,e)) &*& containsInList(removeFromList(elems, e), e) == false;
 	{
+		//Node temp = head, prev = null;
 		//@open set(elems);
 		//@open listOf(head, elems);
-		//if(this.head.value == e) {
+		if(this.head.value == e) {
 			head = head.next;
 			size--;
-			//close listOf(head, tail(elems));
-			//close set(removeFromList(elems,e));
-			//@close set(tail(elems));
-		//} //else {
-			//removeAux(e,head,head.next);
+			//close listOf(head, removeFromList(elems,e));
+			//@close set(removeFromList(elems,e));
+			//close set(tail(elems));
+		} else {
+			/*while (temp.value != e) 
+			//@ invariant listOf(temp, elems);
+       			{ 
+           		prev = temp; 
+            		temp = temp.next; 
+        		}  
+			//open listOf(head.next, ?nelems);
+			
 			//close listOf(head, removeFromList(elems, e));
 			//close set(removeFromList(elems, e));
-		//}
-		//@close set(tail(elems));
-		//@close set(tail(elems));
-		
-	}
-	
-	private Node remove (Object e, Node current)
-	// requires listOf(current, ?elems);
-	// ensures listOf(current, elems) &*& containsInList(elems, e) == false;
-	{
-		if (current == null) {
-			//@open listOf(current, elems);
-			return current;
-			//@close listOf(current, nil);
-		} else {
-			//@open listOf(current, elems);
-			return (current.value == e ? current.next : remove(e, current.next));
-			//@close listOf(current, elems);
+			prev.next = temp.next;*/
+			removeAux(e,head,head.next);
 		}
+		//close set(tail(elems));
+		//close set(tail(elems));
+		
 	}
 
 	private void removeAux(Object e, Node previous, Node current)
-	// requires listOf(previous, ?elems);
+	//@ requires previous.value |-> ?v1 &*& previous.next |-> ?n1 &*& current.value |-> ?v2 &*& current.next |-> ?n2;
+	//@ ensures previous.value |-> v1 &*& previous.next |-> n2 &*& current.value |-> v2 &*& current.next |-> n2;
+	// requires listOf(previous, ?elems) &*& listOf(current, ?elems2);
 	// ensures listOf(previous, elems) &*& containsInList(elems, e) == false;
 	{
-		if (current == null) {
-			return;
-		} else {
+		if (current != null) {
 			if (current.value == e) {
 				previous.next = current.next;
 				size--;
@@ -204,7 +199,7 @@ class ObjectSet {//implements Set{
 	}
 
 
-	/*public static void main(String[] args)
+	public static void main(String[] args)
 	//@ requires System_out(?o) &*& o != null;
 	//@ ensures true;
 	{
@@ -229,7 +224,7 @@ class ObjectSet {//implements Set{
 		System.out.println("size " + set.size());
 		System.out.println(set.contains(a));
 		System.out.println(set.contains(b));
-	}*/
+	}
 
 
 
