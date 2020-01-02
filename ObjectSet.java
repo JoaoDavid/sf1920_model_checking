@@ -163,17 +163,20 @@ class ObjectSet {//implements Set{
 
 	public void remove(Object e)
 	//@ requires set(?elems) &*& containsInList(elems, e) == true &*& elems != nil;
-	//@ ensures set(removeFromList(elems,e)) &*& containsInList(removeFromList(elems,e), e) == false;
+	//@ ensures set(removeFromList(elems,e)) &*& containsInList(removeFromList(elems,e), e) == false &*& length(elems) == 1 + length(removeFromList(elems,e));
 	{
 		//@open set(elems);
 		//@open listOf(head, elems);
 		if(this.head.value == e) {
 			head = head.next;
 			size--;
-			//@close set(removeFromList(elems,e));		
+			//@close set(removeFromList(elems,e));
+			int heaf = 2;
 		} else {		
 			removeAuxTwo(e,head);
-			//close set(removeFromList(elems,e));
+			// open listOf(head, ?elems1);
+			//close listOf(head, cons(head.value, elems));
+			//@close set(removeFromList(elems,e));
 		}
 		
 	}
@@ -182,7 +185,7 @@ class ObjectSet {//implements Set{
 	// requires previous.value |-> ?v1 &*& previous.next |-> ?n1 &*& current.value |-> ?v2 &*& current.next |-> ?n2;
 	// ensures previous.value |-> v1 &*& previous.next |-> n1 &*& current.value |-> v2 &*& current.next |-> n2;
 	//@ requires listOf(previous, ?elems);
-	//@ ensures listOf(previous, elems);
+	//@ ensures listOf(previous, removeFromList(elems,e));
 	{
 		Node current = previous.next;
 		if (current != null) {
