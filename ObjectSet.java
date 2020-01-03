@@ -35,6 +35,13 @@ fixpoint list<t> removeFromList<t>(list<t> xs, t value) {
 	}
 }
 
+fixpoint boolean distinctValues<t>(list<t> xs) {
+    switch (xs) {
+        case nil: return true;
+        case cons(x, xs0): return !containsInList(xs0,x) && distinctValues(xs0);
+    }
+}
+
 fixpoint list<t> myTail<t>(list<t> xs) {
 	switch (xs) {
 	case nil: return nil;
@@ -60,7 +67,7 @@ class ObjectSet {//implements Set{
 	/*@
 	predicate set(list<Object> elems) =
 	head |-> ?h &*& listOf(h, elems) &*&
-	size |-> length(elems);
+	size |-> length(elems) &*& distinctValues(elems) == true;
 	@*/
 
 	private Node head;
@@ -161,8 +168,8 @@ class ObjectSet {//implements Set{
 	}
 
 	public void remove(Object e)
-	//@ requires set(?elems) &*& containsInList(elems, e) == true &*& elems != nil;
-	//@ ensures set(removeFromList(elems,e));
+	// requires set(?elems) &*& containsInList(elems, e) == true &*& elems != nil;
+	// ensures set(removeFromList(elems,e));// &*& containsInList(removeFromList(elems,e), e) == false;
 	{
 		//@open set(elems);
 		//@open listOf(head, elems);
@@ -181,16 +188,48 @@ class ObjectSet {//implements Set{
 		
 	}
 	
+	public void removeLoop(Object e)
+	// requires set(?elems) &*& containsInList(elems, e) == true &*& elems != nil;
+	// ensures set(removeFromList(elems,e));// &*& containsInList(removeFromList(elems,e), e) == false;
+	{
+		//@open set(elems);
+		//@open listOf(head, elems);
+		if(this.head.value == e) {
+			head = head.next;
+			size--;
+			//@close set(removeFromList(elems,e));
+			int heaf = 2;
+		} else {
+			
+			Node prev = head;
+			Node curr = head.next;
+			
+			//@close listOf(head, elems);	
+			int ewtwet = 5;
+			// open listOf(head.next, ?nelems);
+			for (int i = 0; i < this.size; i++)
+			//@invariant 0 <= i &*& i <= length(elems) &*& set(elems);
+			{
+				//@open listOf(head, _);
+				int tgs = 3;
+				prev = prev.next;
+				tgs = 3;
+				
+			}
+				//prev.next = prev.next.next;
+				//size--;
+		}
+		
+	}
+	
 	private void removeAuxTwo(Object e, Node previous)
-	// requires previous.value |-> ?v1 &*& previous.next |-> ?n1 &*& current.value |-> ?v2 &*& current.next |-> ?n2;
-	// ensures previous.value |-> v1 &*& previous.next |-> n1 &*& current.value |-> v2 &*& current.next |-> n2;
-	//@ requires listOf(previous, ?elems) &*& previous != null;
-	//@ ensures listOf(previous, removeFromList(elems,e)) &*& length(elems) == 1 + length(removeFromList(elems,e));
+	// requires listOf(previous, ?elems) &*& previous != null;
+	// ensures listOf(previous, removeFromList(elems,e)) &*& length(elems) == 1 + length(removeFromList(elems,e));
 	{
 		//@ open listOf(previous, elems);
 		Node current = previous.next;
 		if (current != null) {
-			//@ open listOf(previous.next, ?elems1);
+			//@ open listOf(current, ?elems1);
 			if (current.value == e) {
 				previous.next = current.next;
 				//@ close listOf(previous, removeFromList(elems,e));
@@ -198,11 +237,13 @@ class ObjectSet {//implements Set{
 				//size--;
 				int afae = 2;
 			} else {
-				
+				//@ close listOf(current, elems1);
+				// close listOf(previous, elems);
 				
 				removeAuxTwo(e, current);
-				//@ close listOf(previous.next, _);
-				//@ close listOf(previous, removeFromList(elems,e));			
+				//@ close listOf(previous, removeFromList(_,e));
+				
+							
 				int afa = 2;
 			}
 		}	
@@ -226,8 +267,8 @@ class ObjectSet {//implements Set{
 
 
 	public static void main(String[] args)
-	//@ requires System_out(?o) &*& o != null;
-	//@ ensures true;
+	// requires System_out(?o) &*& o != null;
+	// ensures true;
 	{
 		ObjectSet set = new ObjectSet();
 		Integer a = new Integer(1);
@@ -237,11 +278,13 @@ class ObjectSet {//implements Set{
 		set.add(aa);
 		set.add(b);
 		System.out.println("size " + set.size);
-		set.remove(aa);
+		set.removeLoop(aa);
 		System.out.println("size " + set.size);
 		System.out.println(set.contains(a));
 		System.out.println(set.contains(aa));
 		System.out.println(set.contains(b));
+		set.removeLoop(b);
+		System.out.println("size " + set.size);
 	}
 
 
