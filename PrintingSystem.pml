@@ -30,18 +30,19 @@ proctype printer() {
   int currPage;
   end:
   do
-  :: state == idle -> 
-          request ? msgType, numPages, recvChan, clientListenChan;
+  :: request ? msgType, numPages, recvChan, clientListenChan ->
           clientListenChan ! location(_pid)
           printf("Printer %d received print request of %d pages\n", _pid, numPages);
-          state = printing
-  :: state == printing && currPage < numPages ->
-          recvChan ? msgType, currPage;
-          printf("Printing page %d/%d\n", currPage, numPages)
-          //state = (currPage == numPages-> idle : printing) 
-  :: currPage == numPages ->
-          state = idle;
-          currPage = 0          
+          state = printing;
+          do
+          :: currPage < numPages ->
+                  recvChan ? msgType, currPage;
+                  printf("Printing page %d/%d\n", currPage, numPages)
+          :: currPage == numPages ->
+                  state = idle;
+                  currPage = 0;
+                  break
+          od       
   od
 }
 
