@@ -7,8 +7,8 @@
 chan request = [PRINTING_CHANNEL_CAPACITY] of { mtype, int, chan };
 mtype = { printReq, page };
 
-/*mtype = { idle, printing }; 
-active proctype manager() {
+mtype = { idle, printing }; 
+/*active proctype manager() {
   mtype printers[NUM_OF_PRINTERS] = {idle,idle,idle}
   do
   :: printers[0] == idle -> printers[0] = printing; printf("printer num 0 is now priniting\n")
@@ -21,12 +21,25 @@ active proctype manager() {
 
 //active [NUM_OF_PRINTERS] proctype printer() {
 proctype printer() {
+  mtype state = idle;
   mtype msgType;
   int numPages;
   chan recvChan;
+
+  int currPage;
   end:
   do
-  :: request ? msgType, numPages, recvChan -> printf("Printer received print request of %d\n", numPages)
+  :: state == idle -> 
+          request ? msgType, numPages, recvChan;
+          printf("Printer %d received print request of %d pages\n", _pid, numPages);
+          state = printing
+  :: state == printing && currPage < numPages ->
+          recvChan ? msgType, currPage;
+          printf("Printing page %d/%d\n", currPage, numPages)
+          //state = (currPage == numPages-> idle : printing) 
+  :: currPage == numPages ->
+          state = idle;
+          currPage = 0
   od
 }
 
@@ -35,8 +48,9 @@ proctype printer() {
 proctype client(int docLen) {
   int currPage = 0;
   chan sendPages  = [1] of { mtype, int };
+  request ! printReq(docLen, sendPages);
   do
-  :: currPage < docLen -> currPage++; request ! printReq(docLen, sendPages)
+  :: currPage < docLen -> currPage++; sendPages ! page(currPage)
   :: else -> break
   od;
   printf("Client %d finished printing %d pages\n", _pid, currPage)
@@ -59,5 +73,6 @@ active [2] proctype test() {
 init {
   run client(5);
   run client(7);
-  run client(3)
+  run client(3);
+  run printer()
 } 
