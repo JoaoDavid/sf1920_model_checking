@@ -4,8 +4,8 @@
 
 
 
-chan request = [PRINTING_CHANNEL_CAPACITY] of { mtype, int, chan };
-mtype = { printReq, page };
+chan request = [PRINTING_CHANNEL_CAPACITY] of { mtype, int, chan , chan};
+mtype = { printReq, page , location};
 
 mtype = { idle, printing }; 
 /*active proctype manager() {
@@ -25,12 +25,14 @@ proctype printer() {
   mtype msgType;
   int numPages;
   chan recvChan;
+  chan clientListenChan;
 
   int currPage;
   end:
   do
   :: state == idle -> 
-          request ? msgType, numPages, recvChan;
+          request ? msgType, numPages, recvChan, clientListenChan;
+          clientListenChan ! location(_pid)
           printf("Printer %d received print request of %d pages\n", _pid, numPages);
           state = printing
   :: state == printing && currPage < numPages ->
@@ -39,7 +41,7 @@ proctype printer() {
           //state = (currPage == numPages-> idle : printing) 
   :: currPage == numPages ->
           state = idle;
-          currPage = 0
+          currPage = 0          
   od
 }
 
@@ -47,13 +49,21 @@ proctype printer() {
 //active [NUM_OF_CLIENTS] proctype client(int docLen) {
 proctype client(int docLen) {
   int currPage = 0;
+  //channel where the pages will be sent
   chan sendPages  = [1] of { mtype, int };
-  request ! printReq(docLen, sendPages);
+  //channel where the printer's name will be received
+  chan recvPrinterName  = [1] of { mtype, int };
+  //Sending print request
+  request ! printReq(docLen, sendPages, recvPrinterName);
+  int printerName;
+  //Sending document's pages one by one  
   do
   :: currPage < docLen -> currPage++; sendPages ! page(currPage)
   :: else -> break
   od;
-  printf("Client %d finished printing %d pages\n", _pid, currPage)
+  //Receiving the printer's name (pid)
+  recvPrinterName ? _, printerName;
+  printf("Client %d may pick printouts from printer number %d\n", _pid, printerName)
 }
 
 /*chan requestTest = [1] of { byte };
@@ -70,9 +80,19 @@ active [2] proctype test() {
   requestTest ! _pid
 }*/
 
+proctype test2() {
+  bool is = false;
+  end:
+  do
+  :: is -> printf("test2\n")
+  od
+}
+
 init {
   run client(5);
   run client(7);
   run client(3);
-  run printer()
+  run printer();
+  run printer();
+  run test2()
 } 
