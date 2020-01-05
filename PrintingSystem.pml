@@ -16,21 +16,21 @@ proctype printer() {
   int numPages;
   chan recvChan;
   chan clientListenChan;
-
-  int currPage;
+  
   end:
   do
   :: request ? msgType, numPages, recvChan, clientListenChan ->
           clientListenChan ! location(_pid)
           printf("Printer %d received print request of %d pages\n", _pid, numPages);
           state = printing;
+          int currPage;
           do
           :: currPage < numPages ->
                   recvChan ? msgType, currPage;
                   printf("Printing page %d/%d\n", currPage, numPages)
           :: currPage == numPages ->
+                  //changing printer's state to idle
                   state = idle;
-                  currPage = 0;
                   break
           od       
   od
