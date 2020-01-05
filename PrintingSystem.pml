@@ -36,25 +36,29 @@ proctype printer() {
   od
 }
 
-
+bool served = false; //ghost variable, has the client been served?
+ltl absence_of_starvation {eventually served}
 //active [NUM_OF_CLIENTS] proctype client(int docLen) {
-proctype client(int docLen) {
-  int currPage = 0;
+proctype client(int docLen) {  
   //channel where the pages will be sent
   chan sendPages  = [1] of { mtype, int };
   //channel where the printer's name will be received
   chan recvPrinterName  = [1] of { mtype, int };
+  served = false; //ghost variable
   //Sending print request
   request ! printReq(docLen, sendPages, recvPrinterName);
   int printerName;
-  //Sending document's pages one by one  
+  //Sending document's pages one by one
+  int currPage = 0;
   do
   :: currPage < docLen -> currPage++; sendPages ! page(currPage)
   :: else -> break
   od;
   //Receiving the printer's name (pid)
   recvPrinterName ? _, printerName;
-  printf("Client %d may pick printouts from printer number %d\n", _pid, printerName)
+  //served -> served = true;
+  served = true; //ghost variable
+  printf("Client %d may pick printouts from printer number %d\n", _pid, printerName);  
 }
 
 
@@ -65,4 +69,4 @@ init {
   run client(3);
   run printer();
   run printer()
-} 
+}
