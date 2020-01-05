@@ -4,30 +4,34 @@
 
 
 
-chan request = [PRINTING_CHANNEL_CAPACITY] of { mtype, int, chan , chan};
+chan request = [PRINTING_CHANNEL_CAPACITY] of { mtype, int, int, chan , chan};
 mtype = { printReq, page , location};
 mtype = { idle, printing }; 
 
 
+ltl no_page_mix_up {always eventually clientSentReq == clientSentPage}
+int clientSentReq;
+int clientSentPage;
 //active [NUM_OF_PRINTERS] proctype printer() {
 proctype printer() {
   mtype state = idle;
   mtype msgType;
   int numPages;
   chan recvChan;
-  chan clientListenChan;
+  chan clientListenChan;  
   
   end:
   do
-  :: request ? msgType, numPages, recvChan, clientListenChan ->
+  :: request ? msgType, clientSentReq, numPages, recvChan, clientListenChan ->
           clientListenChan ! location(_pid)
           printf("Printer %d received print request of %d pages\n", _pid, numPages);
           state = printing;
           int currPage;
           do
           :: currPage < numPages ->
-                  recvChan ? msgType, currPage;
-                  printf("Printing page %d/%d\n", currPage, numPages)
+                  recvChan ? msgType, clientSentPage, currPage;
+                  printf("Printing page %d/%d\n", currPage, numPages);
+                  //assert(clientSentReq == clientSentPage)
           :: currPage == numPages ->
                   //changing printer's state to idle
                   state = idle;
@@ -36,22 +40,23 @@ proctype printer() {
   od
 }
 
+
 bool served = false; //ghost variable, has the client been served?
 ltl absence_of_starvation {eventually served}
 //active [NUM_OF_CLIENTS] proctype client(int docLen) {
 proctype client(int docLen) {  
   //channel where the pages will be sent
-  chan sendPages  = [1] of { mtype, int };
+  chan sendPages  = [1] of { mtype, int, int };
   //channel where the printer's name will be received
   chan recvPrinterName  = [1] of { mtype, int };
   served = false; //ghost variable
   //Sending print request
-  request ! printReq(docLen, sendPages, recvPrinterName);
+  request ! printReq(_pid, docLen, sendPages, recvPrinterName);
   int printerName;
   //Sending document's pages one by one
   int currPage = 0;
   do
-  :: currPage < docLen -> currPage++; sendPages ! page(currPage)
+  :: currPage < docLen -> currPage++; sendPages ! page(_pid, currPage)
   :: else -> break
   od;
   //Receiving the printer's name (pid)
