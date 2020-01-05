@@ -14,7 +14,6 @@ int clientSentReq;
 int clientSentPage;
 //active [NUM_OF_PRINTERS] proctype printer() {
 proctype printer() {
-  mtype state = idle;
   mtype msgType;
   int numPages;
   chan recvChan;
@@ -22,19 +21,20 @@ proctype printer() {
   
   end:
   do
+  //printer is iddle
   :: request ? msgType, clientSentReq, numPages, recvChan, clientListenChan ->
+          //printer accepted print request from client 'clientSentReq'
           clientListenChan ! location(_pid)
           printf("Printer %d received print request of %d pages\n", _pid, numPages);
-          state = printing;
           int currPage;
           do
           :: currPage < numPages ->
-                  recvChan ? msgType, clientSentPage, currPage;
+                  recvChan ? msgType, clientSentPage, currPage; //receiving page one by one
                   printf("Printing page %d/%d\n", currPage, numPages);
                   //assert(clientSentReq == clientSentPage)
           :: currPage == numPages ->
+                  //printer finished printing all pages of the document
                   //changing printer's state to idle
-                  state = idle;
                   break
           od       
   od
