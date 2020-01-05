@@ -6,18 +6,8 @@
 
 chan request = [PRINTING_CHANNEL_CAPACITY] of { mtype, int, chan , chan};
 mtype = { printReq, page , location};
-
 mtype = { idle, printing }; 
-/*active proctype manager() {
-  mtype printers[NUM_OF_PRINTERS] = {idle,idle,idle}
-  do
-  :: printers[0] == idle -> printers[0] = printing; printf("printer num 0 is now priniting\n")
-  :: printers[1] == idle -> printers[1] = printing; printf("printer num 1 is now priniting\n")
-  :: printers[2] == idle -> printers[2] = printing; printf("printer num 2 is now priniting\n")
-  :: else -> printf("finished\n"); break
-  od;
-  //printf("my manger pid is %d\n", _pid)
-}*/
+
 
 //active [NUM_OF_PRINTERS] proctype printer() {
 proctype printer() {
@@ -67,33 +57,12 @@ proctype client(int docLen) {
   printf("Client %d may pick printouts from printer number %d\n", _pid, printerName)
 }
 
-/*chan requestTest = [1] of { byte };
-active [4] proctype Server() {
-  byte client;
-  end:
-  do
-  :: requestTest ? client -> printf("Creceive dlient %d\n", client)
-  od
-} 
 
-active [2] proctype test() {
-  int sfaf = 4;
-  requestTest ! _pid
-}*/
-
-proctype test2() {
-  bool is = false;
-  end:
-  do
-  :: is -> printf("test2\n")
-  od
-}
 
 init {
   run client(5);
   run client(7);
   run client(3);
   run printer();
-  run printer();
-  run test2()
+  run printer()
 } 
