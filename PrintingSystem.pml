@@ -32,7 +32,7 @@ active [NUM_OF_PRINTERS] proctype printer() {
                   recvChan ? msgType, clientSentPage, currPage; //receiving page one by one
                   printf("Printer number %d printing page %d/%d\n", _pid, currPage, numPages);
                   //Mutual exclusion and no page mix-up properties
-                  assert(clientSentReq == clientSentPage)
+                  assert(clientSentReq == clientSentPage + 1)
           :: currPage == numPages ->
                   //printer finished printing all pages of the document
                   //changing printer's state to idle
@@ -43,7 +43,7 @@ active [NUM_OF_PRINTERS] proctype printer() {
 
 
 bool served [NUM_OF_CLIENTS]; //ghost variable, has the client been served?
-ltl absence_of_starvation {eventually always served[_pid % NUM_OF_CLIENTS]}
+//ltl absence_of_starvation {eventually always served[_pid % NUM_OF_CLIENTS]}
 active [NUM_OF_CLIENTS] proctype client(int docLen) {
 //proctype client(int docLen) {  
   //channel where the pages will be sent
@@ -62,6 +62,10 @@ active [NUM_OF_CLIENTS] proctype client(int docLen) {
   od;
   //Receiving the printer's name (pid)
   recvPrinterName ? _, printerName;
+  //uncomment the following code in order to violate no_deadlock property
+  /*do
+  :: false -> skip
+  od;*/
   served[_pid % NUM_OF_CLIENTS] = true; //ghost variable, comment this line in order to violate ltl absence_of_starvation
   printf("Client %d may pick printouts from printer number %d\n", _pid, printerName);  
 }
