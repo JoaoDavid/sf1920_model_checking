@@ -1,1 +1,9 @@
 *.exe
+*.b
+*.c
+*.h
+*.m
+*.p
+*.t
+*.tmp
+*.trail
