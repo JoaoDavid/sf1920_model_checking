@@ -11,7 +11,7 @@ pan
 (-DSAFETY disables -a,-l,-f, because they are used to check liveness properties, and we pretend to check for SAFETY properties)
 
 This two properties can be checked with the same assertion, written in the proctype printer:
-assert(clientSentReq[_pid % NUM_OF_PRINTERS] == clientSentPage[_pid % NUM_OF_PRINTERS])
+assert(clientSentReq == clientSentPage)
 
 When a printer pops a print request from the common shared asynchronous channel, it enters in printing mode. Only one printer can read that request, because the channel's read/write operations are atomic.
 The request contains the number of pages to be printed, and since the pages must be sent one by one, the printer process has a do loop that will iterate as many times as the number of pages stated in the request.

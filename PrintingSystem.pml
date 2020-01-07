@@ -1,38 +1,48 @@
+/**
+ * Reliable Software
+ * Department of Informatics
+ * Faculty of Sciences
+ * University of Lisbon
+ * January 09, 2020
+ * João David n49448
+ *
+ * Printing system using Mdel Checking
+ */
 #define NUM_OF_PRINTERS 3
 #define NUM_OF_CLIENTS 2 
 #define PRINTING_CHANNEL_CAPACITY 3
 
 
-
+//channel used to send requests
 chan request = [PRINTING_CHANNEL_CAPACITY] of { mtype, int, int, chan , chan};
+//types of messages
 mtype = { printReq, page , location};
 
 
-int clientSentReq [NUM_OF_PRINTERS];
-int clientSentPage [NUM_OF_PRINTERS];
-//ltl mutex {always eventually clientSentReq == clientSentPage until numPages == currPage}
 //active [NUM_OF_PRINTERS] proctype printer() {
 proctype printer() {
   mtype msgType;
   int numPages;
   chan recvChan;
   chan clientListenChan;  
-  
+  int clientSentReq; //ghost variable
+  int clientSentPage; //ghost variable
   end:
   do
   //printer is iddle
-  :: request ? msgType, clientSentReq[_pid % NUM_OF_PRINTERS], numPages, recvChan, clientListenChan ->
+  :: request ? msgType, clientSentReq, numPages, recvChan, clientListenChan ->
           //printer accepted print request from client 'clientSentReq'
           clientListenChan ! location(_pid);
           printf("Printer number %d received print request of %d pages\n", _pid, numPages);          
           int currPage = 0
+          //printer will enter printing mode
           do          
           :: currPage < numPages ->
-                  recvChan ? msgType, clientSentPage[_pid % NUM_OF_PRINTERS], currPage; //receiving page one by one
+                  recvChan ? msgType, clientSentPage, currPage; //receiving page one by one
                   printf("Printer number %d printing page %d/%d\n", _pid, currPage, numPages);
                   //Mutual exclusion and no page mix-up properties
-                  //change from == to != in the following assert in order to violate the properties
-                  assert(clientSentReq[_pid % NUM_OF_PRINTERS] == clientSentPage[_pid % NUM_OF_PRINTERS])
+                  //change from == to != in the following assert statement in order to violate the properties
+                  assert(clientSentReq == clientSentPage)
           :: currPage == numPages ->
                   //printer finished printing all pages of the document
                   //changing printer's state to idle
@@ -71,7 +81,13 @@ proctype client(int docLen) {
 }
 
 
+/*
+HOW TO CHANGE THE NUMBER OF PRINTERS AND CLIENTS
 
+Change the values in the #define statements at the top of the file
+and then make sure that the number of run client(x) statements is equal to NUM_OF_CLIENTS
+and the number of run printer() statements is equal to NUM_OF_PRINTERS
+*/
 init {
   run client(5);
   run client(7);
