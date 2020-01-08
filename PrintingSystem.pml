@@ -8,15 +8,14 @@
  *
  * Printing system using Model Checking
  */
-#define NUM_OF_PRINTERS 2
-#define NUM_OF_CLIENTS 4
+#define NUM_OF_PRINTERS 3
+#define NUM_OF_CLIENTS 2
 #define PRINTING_CHANNEL_CAPACITY 3
 
 
 //channel used to send requests
 chan request = [PRINTING_CHANNEL_CAPACITY] of { int, int, chan , chan};
 
-//active [NUM_OF_PRINTERS] proctype printer() {
 proctype printer() {
   int numPages;
   chan recvChan;
@@ -39,7 +38,7 @@ proctype printer() {
                   //change from == to != in the following assert statement in order to violate the propery
                   assert(clientSentReq == clientSentPage) //no page mix-up property
           :: currPage == numPages ->
-                  replyChan ! _pid; //confirm end of print
+                  recvChan ? _, _; //confirm end of print
                   //printer finished printing all pages of the document
                   //changing printer's state to idle
                   break
@@ -49,32 +48,32 @@ proctype printer() {
 
 int printerServing [NUM_OF_PRINTERS]; //ghost variable
 bool served [NUM_OF_CLIENTS]; //ghost variable, has the client been served?
-//ltl absence_of_starvation {eventually always served[_pid % NUM_OF_CLIENTS]}
-//active [NUM_OF_CLIENTS] proctype client(int docLen) {
+ltl absence_of_starvation {eventually always served[_pid % NUM_OF_CLIENTS]}
 proctype client(int docLen) {  
   //channel where the pages will be sent
-  chan sendPages  = [0] of { int, int };
+  chan sendPages  = [1] of { int, int };
   //channel where the printer's name will be received, so the client may know where to pick the printouts
-  chan recvPrinterName  = [0] of { int };
+  chan recvPrinterName  = [1] of { int };
   served[_pid % NUM_OF_CLIENTS] = false; //ghost variable
   //Sending print request
   request ! _pid, docLen, sendPages, recvPrinterName;
   int printerName;
   //Receiving the printer's name (pid)
   recvPrinterName ? printerName; //printerName is the printer that accepted the request
-  printerServing[printerName % NUM_OF_PRINTERS]++; //ghost variable, printer at index printerName % NUM_OF_PRINTERS is serving a client
+  
   //Sending document's pages one by one
   int currPageSent = 0;
   do
-  :: currPageSent < docLen ->        
+  :: currPageSent < docLen ->
+        printerServing[printerName % NUM_OF_PRINTERS]++; //ghost variable, printer at index printerName % NUM_OF_PRINTERS is serving a client
         //sending pages to printer        
         currPageSent++;
         sendPages ! _pid, currPageSent;
         //only one client can send pages to a printer at a time
-        assert (printerServing[printerName % NUM_OF_PRINTERS] <= 1) //mutual exclusion property   
+        assert (printerServing[printerName % NUM_OF_PRINTERS] <= 1) //mutual exclusion property
+        printerServing[printerName % NUM_OF_PRINTERS]--; //ghost variable, printer stoped serving the client   
   :: else ->
-        printerServing[printerName % NUM_OF_PRINTERS]--; //ghost variable, printer stoped serving the client
-        recvPrinterName ? printerName; //confirm end of print
+        sendPages ! _pid, currPageSent; //confirm end of print
         break
   od;
   
@@ -94,9 +93,7 @@ init {
   run client(5);
   run client(7);
   run client(5);
-  run client(7);
   run printer();
-  //run printer();
   run printer()
 }
 
@@ -106,16 +103,17 @@ At the top of the source file there is the statement #define PRINTING_CHANNEL_CA
 representing channel size, just change that number in order to change its size
 
 
--------------- no_page_mix_up and mutual_exclusion --------------------
+-------------- no_page_mix_up --------------------
 
 Within the source file directory, execute the following commands:
+(make sure the ltl formulas are commented)
 spin -a PrintingSystem.pml
 gcc -O2 -DSAFETY -o pan pan.c
 pan
 
 (-DSAFETY disables -a,-l,-f, because they are used to check liveness properties, and we pretend to check for SAFETY properties)
 
-This two properties can be checked with the same assertion, written in the proctype printer:
+The property can be checked with following assertion inside proctype printer:
 assert(clientSentReq == clientSentPage)
 
 When a printer pops a print request from the common shared asynchronous channel, it enters in printing mode. 
@@ -127,7 +125,6 @@ the pages that are being sent to the printer must be from the same client that s
 until all the pages are printed (client is served), and the printer becomes idle again. 
 Thus the asserition previously mentioned must be true everytime a new page is received by the printer.
 
-This also proves that the property no page mix-up holds, since each printer only prints pages from the request currently being processed
 
 If the property is violated, the following message will show up
 pan: assertion violated (<bool expression>) (at depth _)
@@ -139,11 +136,35 @@ If the property holds, the message simply won't be printed
 
 
 
+-------------- mutual_exclusion --------------------
+Within the source file directory, execute the following commands:
+(make sure the ltl formulas are commented)
+spin -a PrintingSystem.pml
+gcc -O2 -DSAFETY -o pan pan.c
+pan
+
+(-DSAFETY disables -a,-l,-f, because they are used to check liveness properties, and we pretend to check for SAFETY properties)
+
+The property can be checked with following assertion inside proctype printer:
+assert (printerServing[printerName % NUM_OF_PRINTERS] <= 1)
+This means that, from the moment a client receives the first message sent by the printer that accepted his request
+until the last message, that specific printer is only being sent pages at max from one client
+
+If the property is violated, the following message will show up
+pan: assertion violated (<bool expression>) (at depth _)
+Since this is a safety property (something good eventually happens)
+a counterexample consists of one state where the formula is false.
+In this case, it would be when two clients are sending pages to the same printer at the same time
+
+If the property holds, the message simply won't be printed
+
+
 ------------------------ absence_of_starvation-------------------------
 
 Within the source file directory, execute the following commands:
+(make sure the ltl formulas are UNcommented)
 spin -a PrintingSystem.pml
-gcc -O2 -o pan pan.c
+gcc -O2 -DNFAIR=3 -o pan pan.c
 pan -a -f -N absence_of_starvation
 
 (-a enables search for acceptance cyles)
@@ -167,6 +188,7 @@ If commented, simulates the client never being served (starvation)
 ------------------------------ no_deadlock -----------------------------------
 
 Within the source file directory, execute the following commands:
+(make sure the ltl formulas are commented)
 spin -a PrintingSystem.pml
 gcc -O2 -DSAFETY -o pan pan.c
 pan
