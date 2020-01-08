@@ -8,8 +8,8 @@
  *
  * Printing system using Model Checking
  */
-#define NUM_OF_PRINTERS 3
-#define NUM_OF_CLIENTS 2 
+#define NUM_OF_PRINTERS 2
+#define NUM_OF_CLIENTS 4
 #define PRINTING_CHANNEL_CAPACITY 3
 
 
@@ -22,8 +22,8 @@ proctype printer() {
   chan recvChan;
   chan replyChan;  
   int clientSentReq; //ghost variable
-  int clientSentPage; //ghost variable
-  end:
+  int clientSentPage; //ghost variable  
+  endprinter: //comment this statement in order to violate deadlock property
   do
   //printer is iddle
   :: request ? clientSentReq, numPages, recvChan, replyChan ->
@@ -35,11 +35,11 @@ proctype printer() {
           do          
           :: currPage < numPages ->
                   recvChan ? clientSentPage, currPage; //receiving page one by one
-                  printf("Printer number %d printing page %d/%d\n", _pid, currPage, numPages);
-                  //Mutual exclusion and no page mix-up properties
-                  //change from == to != in the following assert statement in order to violate the properties
-                  assert(clientSentReq == clientSentPage)
+                  printf("Printer number %d printing page %d/%d\n", _pid, currPage, numPages);                  
+                  //change from == to != in the following assert statement in order to violate the propery
+                  assert(clientSentReq == clientSentPage) //no page mix-up property
           :: currPage == numPages ->
+                  replyChan ! _pid; //confirm end of print
                   //printer finished printing all pages of the document
                   //changing printer's state to idle
                   break
@@ -47,31 +47,37 @@ proctype printer() {
   od
 }
 
-
+int printerServing [NUM_OF_PRINTERS]; //ghost variable
 bool served [NUM_OF_CLIENTS]; //ghost variable, has the client been served?
-ltl absence_of_starvation {eventually always served[_pid % NUM_OF_CLIENTS]}
+//ltl absence_of_starvation {eventually always served[_pid % NUM_OF_CLIENTS]}
 //active [NUM_OF_CLIENTS] proctype client(int docLen) {
 proctype client(int docLen) {  
   //channel where the pages will be sent
-  chan sendPages  = [1] of { int, int };
+  chan sendPages  = [0] of { int, int };
   //channel where the printer's name will be received, so the client may know where to pick the printouts
-  chan recvPrinterName  = [1] of { int };
+  chan recvPrinterName  = [0] of { int };
   served[_pid % NUM_OF_CLIENTS] = false; //ghost variable
   //Sending print request
   request ! _pid, docLen, sendPages, recvPrinterName;
   int printerName;
+  //Receiving the printer's name (pid)
+  recvPrinterName ? printerName; //printerName is the printer that accepted the request
+  printerServing[printerName % NUM_OF_PRINTERS]++; //ghost variable, printer at index printerName % NUM_OF_PRINTERS is serving a client
   //Sending document's pages one by one
   int currPageSent = 0;
   do
-  :: currPageSent < docLen -> currPageSent++; sendPages ! _pid, currPageSent
-  :: else -> break
+  :: currPageSent < docLen ->        
+        //sending pages to printer        
+        currPageSent++;
+        sendPages ! _pid, currPageSent;
+        //only one client can send pages to a printer at a time
+        assert (printerServing[printerName % NUM_OF_PRINTERS] <= 1) //mutual exclusion property   
+  :: else ->
+        printerServing[printerName % NUM_OF_PRINTERS]--; //ghost variable, printer stoped serving the client
+        recvPrinterName ? printerName; //confirm end of print
+        break
   od;
-  //Receiving the printer's name (pid)
-  recvPrinterName ? printerName;
-  //uncomment the following code in order to violate no_deadlock property
-  /*do
-  :: false -> skip
-  od;*/
+  
   served[_pid % NUM_OF_CLIENTS] = true; //ghost variable, comment this line in order to violate ltl absence_of_starvation
   printf("Client %d may pick printouts from printer number %d\n", _pid, printerName);  
 }
@@ -87,8 +93,10 @@ and the number of run printer() statements is equal to NUM_OF_PRINTERS
 init {
   run client(5);
   run client(7);
+  run client(5);
+  run client(7);
   run printer();
-  run printer();
+  //run printer();
   run printer()
 }
 
@@ -173,9 +181,6 @@ a counterexample consists of one state where the formula is false.
 
 If there is no deadlock in the model, the message pan: invalid end state (at depth _) will not be shown
 
-In order to intentionally violate this property, just uncomment the code block inside proctype client
-do
-:: false -> skip
-od;
-This prevents the process from progressing further
+In order to intentionally violate this property, just comment the code block inside proctype printer
+endprinter:
 */
