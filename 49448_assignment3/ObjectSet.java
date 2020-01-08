@@ -95,7 +95,7 @@ class ObjectSet {
 	}
 
 	public boolean contains(Object e)
-	//@ requires set(?elems);
+	//@ requires set(?elems) &*& e != null;
 	//@ ensures set(elems) &*& containsInList(elems, e) == result;
 	{
 		//@open set(elems);
@@ -104,7 +104,7 @@ class ObjectSet {
 	}
 
 	private boolean contains (Object e, Node current)
-	//@ requires listOf(current, ?elems);
+	//@ requires listOf(current, ?elems) &*& e != null;
 	//@ ensures listOf(current, elems) &*& containsInList(elems, e) == result;
 	{
 		if (current == null) {
@@ -119,7 +119,7 @@ class ObjectSet {
 	}
 
 	public void add(Object e)
-	//@ requires set(?elems) &*& containsInList(elems, e) == false &*& length(elems) < 2147483647;
+	//@ requires set(?elems) &*& containsInList(elems, e) == false &*& length(elems) < 2147483647 &*& e != null;
 	//@ ensures set(cons(e, elems)) &*& containsInList(cons(e, elems), e) == true;
 	{
 		//@open set(elems);
@@ -129,7 +129,7 @@ class ObjectSet {
 	}
 
 	public void remove(Object e)
-	// requires set(?elems) &*& containsInList(elems, e) == true;
+	// requires set(?elems) &*& containsInList(elems, e) == true &*& e != null;
 	// ensures set(removeFromList(elems,e)) &*& containsInList(removeFromList(elems,e), e) == false;
 	{
 		//@open set(elems);
@@ -145,7 +145,7 @@ class ObjectSet {
 	}	
 	
 	private void removeAux(Object e, Node previous)
-	// requires listOf(previous, ?elems) &*& previous != null &*& containsInList(elems, e) == true ;
+	// requires listOf(previous, ?elems) &*& previous != null &*& containsInList(elems, e) == true &*& e != null;
 	// ensures listOf(previous, removeFromList(elems,e)) &*& distinctValues(removeFromList(elems,e)) == true;
 	{
 		//@ open listOf(previous, elems);
