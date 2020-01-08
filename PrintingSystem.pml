@@ -3,10 +3,10 @@
  * Department of Informatics
  * Faculty of Sciences
  * University of Lisbon
- * January 09, 2020
+ * January 08, 2020
  * João David n49448
  *
- * Printing system using Model Checking
+ * Model checking of a printing system
  */
 #define NUM_OF_PRINTERS 3
 #define NUM_OF_CLIENTS 2
@@ -48,7 +48,7 @@ proctype printer() {
 
 int printerServing [NUM_OF_PRINTERS]; //ghost variable
 bool served [NUM_OF_CLIENTS]; //ghost variable, has the client been served?
-ltl absence_of_starvation {eventually always served[_pid % NUM_OF_CLIENTS]}
+//ltl absence_of_starvation {eventually always served[_pid % NUM_OF_CLIENTS]}
 proctype client(int docLen) {  
   //channel where the pages will be sent
   chan sendPages  = [1] of { int, int };
@@ -120,7 +120,7 @@ When a printer pops a print request from the common shared asynchronous channel,
 Only one printer can read that request, because the channel's read/write operations are atomic.
 The request contains the number of pages to be printed, and since the pages must be sent one by one, 
 the printer process has a do loop that will iterate as many times as the number of pages stated in the request.
-In order to guarantee that the printer is not printing pages from different clients at the same time, 
+In order to guarantee that the printer is not mixing up pages from different clients, 
 the pages that are being sent to the printer must be from the same client that sent the print request, 
 until all the pages are printed (client is served), and the printer becomes idle again. 
 Thus the asserition previously mentioned must be true everytime a new page is received by the printer.
